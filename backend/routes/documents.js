@@ -49,6 +49,118 @@ router.post('/', authenticate, authorize('admin', 'super_admin'), upload.single(
   }
 });
 
+// Get document by ID
+router.get('/:id', authenticate, async (req, res) => {
+  try {
+    const db = req.app.locals.db;
+    const result = await db.query(
+      'SELECT * FROM documents WHERE id = $1 AND organization_id = $2',
+      [req.params.id, req.user.organization_id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: { message: 'Document not found' } });
+    }
+    
+    res.json({ document: result.rows[0] });
+  } catch (error) {
+    res.status(500).json({ error: { message: 'Failed to get document' } });
+  }
+});
+
+// Update document metadata
+router.put('/:id', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
+  try {
+    const db = req.app.locals.db;
+    const { id } = req.params;
+    const { title, description, category, visibility } = req.body;
+    
+    const updates = [];
+    const params = [];
+    let paramCount = 0;
+    
+    if (title !== undefined) {
+      paramCount++;
+      updates.push(`title = $${paramCount}`);
+      params.push(title);
+    }
+    if (description !== undefined) {
+      paramCount++;
+      updates.push(`description = $${paramCount}`);
+      params.push(description);
+    }
+    if (category !== undefined) {
+      paramCount++;
+      updates.push(`category = $${paramCount}`);
+      params.push(category);
+    }
+    if (visibility !== undefined) {
+      paramCount++;
+      updates.push(`visibility = $${paramCount}`);
+      params.push(visibility);
+    }
+    
+    if (updates.length === 0) {
+      return res.status(400).json({ error: { message: 'No updates provided' } });
+    }
+    
+    paramCount++;
+    params.push(id);
+    paramCount++;
+    params.push(req.user.organization_id);
+    
+    await db.query(
+      `UPDATE documents SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${paramCount - 1} AND organization_id = $${paramCount}`,
+      params
+    );
+    
+    res.json({ message: 'Document updated successfully' });
+  } catch (error) {
+    console.error('Update document error:', error);
+    res.status(500).json({ error: { message: 'Failed to update document' } });
+  }
+});
+
+// Delete document
+router.delete('/:id', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
+  try {
+    const db = req.app.locals.db;
+    const { id } = req.params;
+    const fs = require('fs').promises;
+    
+    // Get document to delete file
+    const result = await db.query(
+      'SELECT file_path FROM documents WHERE id = $1 AND organization_id = $2',
+      [id, req.user.organization_id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: { message: 'Document not found' } });
+    }
+    
+    const filePath = result.rows[0].file_path;
+    
+    // Delete from database
+    await db.query(
+      'DELETE FROM documents WHERE id = $1 AND organization_id = $2',
+      [id, req.user.organization_id]
+    );
+    
+    // Delete file from filesystem
+    try {
+      await fs.unlink(filePath);
+    } catch (fileError) {
+      console.error('Error deleting file:', fileError);
+      // Continue even if file deletion fails
+    }
+    
+    res.json({ message: 'Document deleted successfully' });
+  } catch (error) {
+    console.error('Delete document error:', error);
+    res.status(500).json({ error: { message: 'Failed to delete document' } });
+  }
+});
+
 router.get('/:id/download', authenticate, async (req, res) => {
   try {
     const db = req.app.locals.db;

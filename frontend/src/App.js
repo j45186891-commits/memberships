@@ -23,6 +23,19 @@ import Forum from './pages/Forum';
 import Settings from './pages/Settings';
 import Layout from './components/Layout';
 
+// Admin Pages
+import EventsAdmin from './pages/admin/EventsAdmin';
+import DocumentsAdmin from './pages/admin/DocumentsAdmin';
+import EmailTemplatesAdmin from './pages/admin/EmailTemplatesAdmin';
+import EmailCampaignsAdmin from './pages/admin/EmailCampaignsAdmin';
+import CommitteesAdmin from './pages/admin/CommitteesAdmin';
+import ForumAdmin from './pages/admin/ForumAdmin';
+import ResourcesAdmin from './pages/admin/ResourcesAdmin';
+import SurveysAdmin from './pages/admin/SurveysAdmin';
+import MailingListsAdmin from './pages/admin/MailingListsAdmin';
+import WorkflowsAdmin from './pages/admin/WorkflowsAdmin';
+import MembershipTypesAdmin from './pages/admin/MembershipTypesAdmin';
+
 const theme = createTheme({
   palette: {
     primary: {
@@ -30,6 +43,15 @@ const theme = createTheme({
     },
     secondary: {
       main: '#dc004e',
+    },
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          textTransform: 'none',
+        },
+      },
     },
   },
 });
@@ -70,8 +92,81 @@ function App() {
               }>
                 <Route index element={<Navigate to="/dashboard" />} />
                 <Route path="dashboard" element={<Dashboard />} />
+                
+                {/* Member Routes */}
                 <Route path="memberships" element={<MembershipList />} />
                 <Route path="memberships/:id" element={<MembershipDetail />} />
+                <Route path="profile" element={<UserProfile />} />
+                <Route path="committees" element={<Committees />} />
+                <Route path="documents" element={<Documents />} />
+                <Route path="events" element={<Events />} />
+                <Route path="forum" element={<Forum />} />
+                
+                {/* Admin Routes */}
+                <Route path="admin">
+                  <Route path="events" element={
+                    <PrivateRoute roles={['admin', 'super_admin']}>
+                      <EventsAdmin />
+                    </PrivateRoute>
+                  } />
+                  <Route path="documents" element={
+                    <PrivateRoute roles={['admin', 'super_admin']}>
+                      <DocumentsAdmin />
+                    </PrivateRoute>
+                  } />
+                  <Route path="email-templates" element={
+                    <PrivateRoute roles={['admin', 'super_admin']}>
+                      <EmailTemplatesAdmin />
+                    </PrivateRoute>
+                  } />
+                  <Route path="email-campaigns" element={
+                    <PrivateRoute roles={['admin', 'super_admin']}>
+                      <EmailCampaignsAdmin />
+                    </PrivateRoute>
+                  } />
+                  <Route path="committees" element={
+                    <PrivateRoute roles={['admin', 'super_admin']}>
+                      <CommitteesAdmin />
+                    </PrivateRoute>
+                  } />
+                  <Route path="forum" element={
+                    <PrivateRoute roles={['admin', 'super_admin']}>
+                      <ForumAdmin />
+                    </PrivateRoute>
+                  } />
+                  <Route path="resources" element={
+                    <PrivateRoute roles={['admin', 'super_admin']}>
+                      <ResourcesAdmin />
+                    </PrivateRoute>
+                  } />
+                  <Route path="surveys" element={
+                    <PrivateRoute roles={['admin', 'super_admin']}>
+                      <SurveysAdmin />
+                    </PrivateRoute>
+                  } />
+                  <Route path="mailing-lists" element={
+                    <PrivateRoute roles={['admin', 'super_admin']}>
+                      <MailingListsAdmin />
+                    </PrivateRoute>
+                  } />
+                  <Route path="workflows" element={
+                    <PrivateRoute roles={['admin', 'super_admin']}>
+                      <WorkflowsAdmin />
+                    </PrivateRoute>
+                  } />
+                  <Route path="membership-types" element={
+                    <PrivateRoute roles={['admin', 'super_admin']}>
+                      <MembershipTypesAdmin />
+                    </PrivateRoute>
+                  } />
+                  <Route path="users" element={
+                    <PrivateRoute roles={['admin', 'super_admin']}>
+                      <UserList />
+                    </PrivateRoute>
+                  } />
+                </Route>
+                
+                {/* Legacy Admin Routes (for backward compatibility) */}
                 <Route path="membership-types" element={
                   <PrivateRoute roles={['admin', 'super_admin']}>
                     <MembershipTypes />
@@ -82,8 +177,6 @@ function App() {
                     <UserList />
                   </PrivateRoute>
                 } />
-                <Route path="profile" element={<UserProfile />} />
-                <Route path="committees" element={<Committees />} />
                 <Route path="email-templates" element={
                   <PrivateRoute roles={['admin', 'super_admin']}>
                     <EmailTemplates />
@@ -94,9 +187,6 @@ function App() {
                     <EmailCampaigns />
                   </PrivateRoute>
                 } />
-                <Route path="documents" element={<Documents />} />
-                <Route path="events" element={<Events />} />
-                <Route path="forum" element={<Forum />} />
                 <Route path="settings" element={
                   <PrivateRoute roles={['admin', 'super_admin']}>
                     <Settings />

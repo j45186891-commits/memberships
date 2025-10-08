@@ -65,6 +65,96 @@ router.post('/', authenticate, authorize('admin', 'super_admin'), async (req, re
   }
 });
 
+// Update mailing list
+router.put('/:id', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
+  try {
+    const db = req.app.locals.db;
+    const { id } = req.params;
+    const { name, email, description, list_type, auto_sync, access_level, settings } = req.body;
+    
+    const updates = [];
+    const params = [];
+    let paramCount = 0;
+    
+    if (name !== undefined) {
+      paramCount++;
+      updates.push(`name = $${paramCount}`);
+      params.push(name);
+    }
+    if (email !== undefined) {
+      paramCount++;
+      updates.push(`email = $${paramCount}`);
+      params.push(email);
+    }
+    if (description !== undefined) {
+      paramCount++;
+      updates.push(`description = $${paramCount}`);
+      params.push(description);
+    }
+    if (list_type !== undefined) {
+      paramCount++;
+      updates.push(`list_type = $${paramCount}`);
+      params.push(list_type);
+    }
+    if (auto_sync !== undefined) {
+      paramCount++;
+      updates.push(`auto_sync = $${paramCount}`);
+      params.push(auto_sync);
+    }
+    if (access_level !== undefined) {
+      paramCount++;
+      updates.push(`access_level = $${paramCount}`);
+      params.push(access_level);
+    }
+    if (settings !== undefined) {
+      paramCount++;
+      updates.push(`settings = $${paramCount}`);
+      params.push(JSON.stringify(settings));
+    }
+    
+    if (updates.length === 0) {
+      return res.status(400).json({ error: { message: 'No updates provided' } });
+    }
+    
+    paramCount++;
+    params.push(id);
+    paramCount++;
+    params.push(req.user.organization_id);
+    
+    await db.query(
+      `UPDATE mailing_lists SET ${updates.join(', ')}, updated_at = CURRENT_TIMESTAMP WHERE id = $${paramCount - 1} AND organization_id = $${paramCount}`,
+      params
+    );
+    
+    res.json({ message: 'Mailing list updated successfully' });
+  } catch (error) {
+    console.error('Update mailing list error:', error);
+    res.status(500).json({ error: { message: 'Failed to update mailing list' } });
+  }
+});
+
+// Delete mailing list
+router.delete('/:id', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
+  try {
+    const db = req.app.locals.db;
+    const { id } = req.params;
+    
+    // Delete subscribers first
+    await db.query('DELETE FROM mailing_list_subscribers WHERE mailing_list_id = $1', [id]);
+    
+    // Delete mailing list
+    await db.query(
+      'DELETE FROM mailing_lists WHERE id = $1 AND organization_id = $2',
+      [id, req.user.organization_id]
+    );
+    
+    res.json({ message: 'Mailing list deleted successfully' });
+  } catch (error) {
+    console.error('Delete mailing list error:', error);
+    res.status(500).json({ error: { message: 'Failed to delete mailing list' } });
+  }
+});
+
 // Add subscriber
 router.post('/:id/subscribers', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
   try {

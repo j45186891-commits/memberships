@@ -379,4 +379,57 @@ router.delete('/:id/members/:member_id', authenticate, authorize('admin', 'super
   }
 });
 
+// Delete committee
+router.delete('/:id', authenticate, authorize('admin', 'super_admin'), async (req, res) => {
+  try {
+    const db = req.app.locals.db;
+    const { id } = req.params;
+    
+    // Check if committee has active members
+    const members = await db.query(
+      'SELECT COUNT(*) as count FROM committee_members WHERE committee_id = $1 AND is_active = true',
+      [id]
+    );
+    
+    if (parseInt(members.rows[0].count) > 0) {
+      return res.status(400).json({ 
+        error: { message: 'Cannot delete committee with active members. Deactivate it instead.' } 
+      });
+    }
+    
+    // Delete committee positions
+    await db.query('DELETE FROM committee_positions WHERE committee_id = $1', [id]);
+    
+    // Delete committee members
+    await db.query('DELETE FROM committee_members WHERE committee_id = $1', [id]);
+    
+    // Delete associated mailing list
+    await db.query(
+      "DELETE FROM mailing_lists WHERE settings->>'committee_id' = $1",
+      [id]
+    );
+    
+    // Delete committee
+    await db.query(
+      'DELETE FROM committees WHERE id = $1 AND organization_id = $2',
+      [id, req.user.organization_id]
+    );
+    
+    // Log audit
+    await logAudit(db, {
+      organization_id: req.user.organization_id,
+      user_id: req.user.id,
+      action: 'committee_deleted',
+      entity_type: 'committee',
+      entity_id: id,
+      ip_address: req.ip
+    });
+    
+    res.json({ message: 'Committee deleted successfully' });
+  } catch (error) {
+    console.error('Delete committee error:', error);
+    res.status(500).json({ error: { message: 'Failed to delete committee' } });
+  }
+});
+
 module.exports = router;
