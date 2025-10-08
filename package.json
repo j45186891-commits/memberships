@@ -1,0 +1,22 @@
+{
+  "name": "membership-management-system",
+  "version": "1.0.0",
+  "description": "Comprehensive Membership Management Application",
+  "main": "backend/server.js",
+  "scripts": {
+    "install-all": "cd backend && npm install && cd ../frontend && npm install",
+    "dev": "concurrently &quot;npm run dev:backend&quot; &quot;npm run dev:frontend&quot;",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm start",
+    "build": "cd frontend && npm run build",
+    "start": "cd backend && npm start",
+    "migrate": "cd backend && npm run migrate",
+    "seed": "cd backend && npm run seed"
+  },
+  "keywords": ["membership", "management", "crm", "organization"],
+  "author": "NinjaTech AI",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
