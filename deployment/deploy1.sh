@@ -42,21 +42,21 @@ print_status "Installing system dependencies..."
 sudo apt install -y curl wget git build-essential software-properties-common apt-transport-https ca-certificates gnupg lsb-release
 
 # Fix Node.js installation conflict
-print_status "Resolving Node.js installation conflicts..."
-print_status "Removing conflicting packages..."
-sudo apt remove -y nodejs libnode-dev libnode72:amd64 || true
-sudo apt autoremove -y
-sudo apt autoclean
+# print_status "Resolving Node.js installation conflicts..."
+# print_status "Removing conflicting packages..."
+# sudo apt remove -y nodejs libnode-dev libnode72:amd64 || true
+# sudo apt autoremove -y
+# sudo apt autoclean
 
 # Install Node.js 20.x properly
-print_status "Installing Node.js 20.x..."
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
+# print_status "Installing Node.js 20.x..."
+# curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+# sudo apt install -y nodejs
 
 # Verify Node.js installation
-print_status "Verifying Node.js installation..."
-node --version
-npm --version
+# print_status "Verifying Node.js installation..."
+# node --version
+# npm --version
 
 # Install PM2 globally
 print_status "Installing PM2 process manager..."
