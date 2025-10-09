@@ -35,7 +35,8 @@ if [[ $EUID -eq 0 ]]; then
 fi
 
 print_status "Updating system packages..."
-sudo apt update &amp;&amp; sudo apt upgrade -y
+sudo apt update
+sudo apt upgrade -y
 
 print_status "Installing system dependencies..."
 sudo apt install -y curl wget git build-essential software-properties-common apt-transport-https ca-certificates gnupg lsb-release
