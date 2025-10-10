@@ -5,7 +5,7 @@
   "main": "backend/server.js",
   "scripts": {
     "install-all": "cd backend && npm install && cd ../frontend && npm install",
-    "dev": "concurrently &quot;npm run dev:backend&quot; &quot;npm run dev:frontend&quot;",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
     "dev:backend": "cd backend && npm run dev",
     "dev:frontend": "cd frontend && npm start",
     "build": "cd frontend && npm run build",
