@@ -13,10 +13,19 @@
     "migrate": "cd backend && npm run migrate",
     "seed": "cd backend && npm run seed"
   },
-  "keywords": ["membership", "management", "crm", "organization"],
+  "keywords": [
+    "membership",
+    "management",
+    "crm",
+    "organization"
+  ],
   "author": "NinjaTech AI",
   "license": "MIT",
   "devDependencies": {
     "concurrently": "^8.2.2"
+  },
+  "dependencies": {
+    "@supabase/auth-helpers-react": "^0.5.0",
+    "@supabase/supabase-js": "^2.75.0"
   }
 }
