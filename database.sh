@@ -775,11 +775,11 @@ fi
 
 print_status "Password hash generated"
 
-# Step 15: Insert organization and admin user
+# Step 15: Insert organization and admin user with FIXED UUID HANDLING
 print_status "Creating organization and admin user..."
 
-# Get organization ID after insert
-ORG_ID=$(PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -t -c "
+# FIXED: Use -t -A flags and xargs to properly capture UUID
+ORG_ID=$(PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -t -A -c "
 INSERT INTO organizations (name, slug, email, settings)
 VALUES ('$ORG_NAME', '$ORG_SLUG', '$ORG_EMAIL', '{}')
 RETURNING id;
@@ -787,8 +787,8 @@ RETURNING id;
 
 print_status "Organization created with ID: $ORG_ID"
 
-# Insert admin user
-PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME << EOF
+# Insert admin user - FIXED: Use proper escaping for password hash
+PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -t -A << EOF > /dev/null
 INSERT INTO users (
     organization_id,
     email,
@@ -816,43 +816,65 @@ EOF
 
 print_status "Admin user created successfully!"
 
-# Step 16: Seed default data
+# Step 16: Seed default data - FIXED: Use -t -A for all UUID captures
 print_status "Seeding default data..."
-PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME << EOF
--- Insert default membership types
+
+# Insert default membership types - suppress output with > /dev/null for inserts without RETURNING
+PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME << EOF > /dev/null
 INSERT INTO membership_types (organization_id, name, slug, description, price, duration_months, max_members, is_active) VALUES
 ('$ORG_ID', 'Adult Membership', 'adult', 'Standard adult membership', 50.00, 12, 1, true),
 ('$ORG_ID', 'Junior Membership', 'junior', 'For members under 18', 25.00, 12, 1, true),
 ('$ORG_ID', 'Family Membership', 'family', 'For families (2 adults + 3 children)', 100.00, 12, 5, true),
 ('$ORG_ID', 'Life Membership', 'life', 'Lifetime membership', 500.00, 1200, 1, true);
+EOF
 
--- Insert default email templates
+print_status "Membership types created"
+
+# Insert default email templates
+PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME << EOF > /dev/null
 INSERT INTO email_templates (organization_id, name, slug, subject, body_html, body_text, template_type, is_active) VALUES
 ('$ORG_ID', 'Welcome Email', 'welcome-email', 'Welcome to $ORG_NAME', '<p>Dear {{first_name}},</p><p>Welcome to $ORG_NAME!</p>', 'Dear {{first_name}}, Welcome to $ORG_NAME!', 'welcome', true),
 ('$ORG_ID', 'Membership Approved', 'membership-approved', 'Your membership has been approved!', '<p>Dear {{first_name}},</p><p>Your membership has been approved!</p>', 'Dear {{first_name}}, Your membership has been approved!', 'approval', true);
+EOF
 
--- Insert default committees
+print_status "Email templates created"
+
+# Insert default committees
+PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME << EOF > /dev/null
 INSERT INTO committees (organization_id, name, description, email, is_active) VALUES
 ('$ORG_ID', 'Executive Committee', 'Primary decision-making committee', 'exec@example.com', true),
 ('$ORG_ID', 'Membership Committee', 'Handles membership applications', 'membership@example.com', true);
+EOF
 
--- Insert default forum categories
+print_status "Committees created"
+
+# Insert default forum categories
+PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME << EOF > /dev/null
 INSERT INTO forum_categories (organization_id, name, description, display_order, is_active) VALUES
 ('$ORG_ID', 'General Discussion', 'General topics and announcements', 1, true),
 ('$ORG_ID', 'Events & Activities', 'Discussion about events', 2, true),
 ('$ORG_ID', 'Member Resources', 'Share resources and information', 3, true);
+EOF
 
--- Insert default mailing lists
+print_status "Forum categories created"
+
+# Insert default mailing lists
+PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME << EOF > /dev/null
 INSERT INTO mailing_lists (organization_id, name, email, description, list_type, auto_sync, access_level) VALUES
 ('$ORG_ID', 'All Members', 'all-members@example.com', 'All current members', 'auto', true, 'public'),
 ('$ORG_ID', 'Committee Members', 'committee@example.com', 'All committee members', 'manual', false, 'private');
+EOF
 
--- Insert default resources
+print_status "Mailing lists created"
+
+# Insert default resources
+PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME << EOF > /dev/null
 INSERT INTO resources (organization_id, name, description, resource_type, capacity, is_active) VALUES
 ('$ORG_ID', 'Main Meeting Room', 'Large meeting room for up to 50 people', 'meeting_room', 50, true),
 ('$ORG_ID', 'Training Room', 'Medium room with projector', 'training_room', 25, true);
 EOF
 
+print_status "Resources created"
 print_status "Default data seeded successfully!"
 
 # Step 17: Clean up temp directory
@@ -920,18 +942,20 @@ print_status ".env file created at /tmp/membership-app.env"
 # Step 19: Verify everything is working
 print_status "Verifying setup..."
 
-# Test admin user login
-USER_COUNT=$(PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -t -c "SELECT COUNT(*) FROM users WHERE email='$ADMIN_EMAIL';" | xargs)
+# Test admin user login - FIXED: Use -t -A and xargs
+USER_COUNT=$(PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -t -A -c "SELECT COUNT(*) FROM users WHERE email='$ADMIN_EMAIL';" | xargs)
 
 if [ "$USER_COUNT" -eq "1" ]; then
     print_status "Admin user verified"
 else
-    print_error "Admin user verification failed"
+    print_error "Admin user verification failed (found $USER_COUNT users, expected 1)"
+    print_info "Checking what happened..."
+    PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -c "SELECT id, email, role, status FROM users;"
     exit 1
 fi
 
-# Test database tables
-TABLE_COUNT=$(PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -t -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public';" | xargs)
+# Test database tables - FIXED: Use -t -A and xargs
+TABLE_COUNT=$(PGPASSWORD=$DB_PASSWORD psql -h localhost -U $DB_USER -d $DB_NAME -t -A -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='public';" | xargs)
 
 print_status "Created $TABLE_COUNT database tables"
 
@@ -952,6 +976,7 @@ echo -e "${BLUE}Organization Information:${NC}"
 echo "  Name: $ORG_NAME"
 echo "  Slug: $ORG_SLUG"
 echo "  Email: $ORG_EMAIL"
+echo "  ID: $ORG_ID"
 echo ""
 echo -e "${BLUE}Admin Credentials:${NC}"
 echo "  Email: $ADMIN_EMAIL"
